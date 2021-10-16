@@ -44,28 +44,29 @@ class Benchmarks:
     def _get_path_(self,name):
         assert name in Benchmarks.BENCHMARKS,name + " BenchMark is not supported yet."
         return Benchmarks.CONFIG["BenchMarks"][name]["url"]
+ 
 
-        
     def _get_bench_mark_(self,name):
         path = os.path.join('./assets',name+'.csv')
         if os.path.exists(path) and self.cashed:
             return pd.read_csv(path)
         
         url = self._get_path_(name)
-        benchmark = pd.read_csv(url)
+        return list(pd.read_csv(url)["Symbol"])
 
-        mappings = self._populate_bse_codes_()
-        benchmark["BSE_CODES"] = benchmark["ISIN Code"]
+        
+        # mappings = self._populate_bse_codes_()
+        # benchmark["BSE_CODES"] = benchmark["ISIN Code"]
     
-        for i,isn_code in enumerate(benchmark["ISIN Code"]):
-            if benchmark["ISIN Code"][i] not in mappings:
-                print("error : ",benchmark["ISIN Code"][i])
-                continue
-            benchmark["BSE_CODES"][i] = mappings[benchmark["ISIN Code"][i]]
+        # for i,isn_code in enumerate(benchmark["ISIN Code"]):
+        #     if benchmark["ISIN Code"][i] not in mappings:
+        #         print("error : ",benchmark["ISIN Code"][i])
+        #         continue
+        #     benchmark["BSE_CODES"][i] = mappings[benchmark["ISIN Code"][i]]
             
-        if self.cashed: 
-           benchmark.to_csv(path)
-        return benchmark
+        # if self.cashed: 
+        #    benchmark.to_csv(path)
+        # return benchmark
 
 
 
