@@ -3,70 +3,34 @@ import os
 import json
 import inspect
 import copy
+import os
+from api import nse_benchmarks,request_url,BENCH_MARK_URL
 
 
-class Benchmarks:
-     
-    with open('./assets/config.json') as f:
-        CONFIG     = json.load(f)   
-        MAPPINGS   = {}
-        BENCHMARKS = list(CONFIG["BenchMarks"].keys())
-        EQUITY     = "./assets/Equity.csv"
 
-
+class Benchmarks: 
+    BENCHMARKS = nse_benchmarks()
+    MAPPINGS   = {}
+    BENCHMARK_NAMES = BENCHMARKS.keys()
      
     def __init__(self,cashed = False):
         self.cashed  = cashed
-
-
-        for func_name in Benchmarks.BENCHMARKS:
+        import pdb;pdb.set_trace()
+        for func_name in Benchmarks.BENCHMARK_NAMES:
             setattr(self, func_name, lambda name=func_name : self._get_bench_mark_(name))
 
-    
+    def get_all_benchmarks(self):
+        return list(Benchmarks.BENCHMARK_NAMES)
         
-    def _populate_bse_codes_(self):
-        if Benchmarks.MAPPINGS:
-            return Benchmarks.MAPPINGS
-
-        df = pd.read_csv(Benchmarks.EQUITY)
-        codes,isin   = list(df["Security Code"]) , list(df["ISIN No"])
-        for k,v in zip(isin,codes):
-            Benchmarks.MAPPINGS[k] = v
-     
-        return Benchmarks.MAPPINGS
-
-    
-    @property
-    def supported_benchmarks(self):
-        return Benchmarks.BENCHMARKS
-
-    
-    def _get_path_(self,name):
-        assert name in Benchmarks.BENCHMARKS,name + " BenchMark is not supported yet."
-        return Benchmarks.CONFIG["BenchMarks"][name]["url"]
- 
 
     def _get_bench_mark_(self,name):
-        path = os.path.join('./assets',name+'.csv')
-        if os.path.exists(path) and self.cashed:
-            return pd.read_csv(path)
-        
-        url = self._get_path_(name)
-        return list(pd.read_csv(url)["Symbol"])
+        return request_url(Benchmarks.BENCHMARKS[name])
 
+bm = Benchmarks()
+print(bm.NIFTY_50())
+
+import pdb;pdb.set_trace()
         
-        # mappings = self._populate_bse_codes_()
-        # benchmark["BSE_CODES"] = benchmark["ISIN Code"]
-    
-        # for i,isn_code in enumerate(benchmark["ISIN Code"]):
-        #     if benchmark["ISIN Code"][i] not in mappings:
-        #         print("error : ",benchmark["ISIN Code"][i])
-        #         continue
-        #     benchmark["BSE_CODES"][i] = mappings[benchmark["ISIN Code"][i]]
-            
-        # if self.cashed: 
-        #    benchmark.to_csv(path)
-        # return benchmark
 
 
 

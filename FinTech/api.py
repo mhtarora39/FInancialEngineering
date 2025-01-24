@@ -2,7 +2,13 @@
 import os
 import requests
 import json
-from benchmarks import Benchmarks
+import requests
+from bs4 import BeautifulSoup
+import pandas as pd
+import brotli
+import yfinance as yf
+from io import StringIO
+from urllib.parse import quote
 
 def build_url(url,query_dict):
     if not query_dict:
@@ -32,8 +38,6 @@ class API:
            return json.loads(results.text)
         except Exception as e:
            return e
-
-
 
 
 class QuandlAPI(API):
@@ -96,15 +100,67 @@ class AlphaAPI(API):
 
 
 
-
-#api = AlphaAPI(ALPHA_VINTAGE_FUNCTIONS.TIME_SERIES.TIME_SERIES_DAILY,"500312")
-
-# b = Benchmarks(False)
-# print(b.nifty_50.head())
-
-# for code in b.nifty_50["BSE_CODES"]:
-#     api = QuandlAPI(str(code))
-#     print(api.run())
+# NSE URL for NIFTY50 constituents
+BENCH_MARK_URL = "https://www.nseindia.com/api/equity-stockIndices?csv=true&index={}&selectValFormat=crores"
+BASE_URL = 'https://www.nseindia.com/'
+ALL_INDICIS = "https://www.nseindia.com/api/allIndices?csv=true"
 
 
+def get_headers():
+    return {
+        'Host': 'www.nseindia.com',
+        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:85.0) Gecko/20100101 Firefox/85.0',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br, ',
+        'X-Requested-With': 'XMLHttpRequest',
+        'DNT': '1',
+        'content-type': 'text/csv',
+        'Connection': 'keep-alive',
+    }
 
+def fetch_cookies():
+    response = requests.get(BASE_URL, timeout=30, headers=get_headers())
+    if response.status_code != requests.codes.ok:
+        #logging.error("Fetched url: %s with status code: %s and response from server: %s" % (
+        #    BASE_URL, response.status_code, response.content))
+        raise ValueError("Please try again in a minute.")
+    return response.cookies.get_dict()
+
+
+def request_url(url):
+    try:
+        #print(f"sending request : {url}" )
+        response = requests.get(url, headers=get_headers(),cookies=fetch_cookies())
+
+        if response.status_code == 200:
+            if response.headers.get('Content-Encoding') == 'br':
+                # Decompress Brotli content
+                try:
+                    decompressed_data = brotli.decompress(response.content)
+                    # Decode to string
+                except:
+                    decompressed_data = response.content
+                csv_data = decompressed_data.decode('utf-8')
+                # Read the CSV data into a DataFrame
+                df = pd.read_csv(StringIO(csv_data))
+                return df
+        else:
+            raise(f"Failed to fetch data. Status code: {response.status_code}")
+        
+    except Exception as e:
+        print(f"Exception : {e}")
+        return ""
+    
+
+def nse_benchmarks(url=ALL_INDICIS,bm_url=BENCH_MARK_URL):
+    index_mappings = {}
+    # Make a GET request to fetch the data
+    df  = request_url(url)
+    for index in df["INDEX \n"]:
+        index_mappings[index.replace(' ','_')] = BENCH_MARK_URL.format(quote(index))
+    return index_mappings
+
+
+# df = nse_benchmarks()
+# import pdb; pdb.set_trace();

@@ -9,7 +9,6 @@ def isinToToken(filePath,destination):
     isin_to_token = {}
     
     for item in json_file:
-        
         symbols = item["symbol"].split("-")
         if len(symbols) == 1:
            symbols.append("Other")
