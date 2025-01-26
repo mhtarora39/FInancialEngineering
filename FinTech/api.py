@@ -10,6 +10,7 @@ import yfinance as yf
 from io import StringIO
 from urllib.parse import quote
 
+
 def build_url(url,query_dict):
     if not query_dict:
         return url 
@@ -38,6 +39,10 @@ class API:
            return json.loads(results.text)
         except Exception as e:
            return e
+
+
+        
+
 
 
 class QuandlAPI(API):
